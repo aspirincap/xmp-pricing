@@ -207,6 +207,31 @@
           }
         }
       }
+    },
+    {
+      "prompt": "媒体数量：TT FB；全年需要 AD 总数：144 万（每月 12 万）；用户数：120 个；广告账号：7000 个，美金 11500。",
+      "category": "明确实际报价_双折扣口径",
+      "expected_behavior": {
+        "must": [
+          "把美金 11500 识别为 USD 实际报价 11500，不得当成广告账号数量或套餐价格",
+          "保留原有的最终核算折扣，分母使用调整后活动价",
+          "新增当前报价相对原活动价折扣，分母使用扣减前的原活动价总价值",
+          "API 与试新均未提及，不得自动扣减；只对明确的大媒体数量生成未使用额度减去项",
+          "实际报价低于 6 折最低价时给出审批警告"
+        ],
+        "key_results": {
+          "currency": "USD",
+          "actual_quote": 11500,
+          "recommended_plan": "VIP 版",
+          "original_activity_total": 36200,
+          "deduction_total": 5600,
+          "adjusted_activity_total": 30600,
+          "final_discount": 3.76,
+          "current_quote_discount_vs_original_activity": 3.18,
+          "recommended_price_90": 27540,
+          "minimum_price_60": 18360
+        }
+      }
     }
   ]
 }

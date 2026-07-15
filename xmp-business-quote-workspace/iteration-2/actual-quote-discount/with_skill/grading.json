@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "score": 1.0,
+  "reason": "六项断言全部满足。",
+  "expectations": [
+    {"text": "识别 USD 实际报价", "passed": true, "evidence": "actual_quote = 11500。"},
+    {"text": "原活动价正确", "passed": true, "evidence": "original_activity_total = 36200。"},
+    {"text": "保留相对调整后活动价折扣", "passed": true, "evidence": "final_discount = 3.76。"},
+    {"text": "新增相对原活动价折扣", "passed": true, "evidence": "current_quote_discount_vs_original_activity = 3.18。"},
+    {"text": "未扣未提及权益", "passed": true, "evidence": "只有大媒体未使用额度减去项。"},
+    {"text": "保留低价审批警告", "passed": true, "evidence": "输出低于 6 折最低价警告。"}
+  ]
+}

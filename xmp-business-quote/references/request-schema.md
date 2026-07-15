@@ -30,7 +30,7 @@
 |---|---|
 | `currency` | 必填：`cny` 或 `usd`；未指定时由调用方分别计算两次 |
 | `locked_plan` | 可选：`basic` / `advanced` / `pro` / `vip` |
-| `actual_quote` | 可选：客户已确认或商务拟报金额；未提供时保持 `null` |
+| `actual_quote` | 可选：客户已确认或商务拟报金额；例如“美金11500”写为 `11500`，未提供时保持 `null` |
 | `deduction_mode` | `auto`（默认）或 `none`；“不做减去项”必须用 `none` |
 | `major_media_names` | 可选：归一化并去重后的大媒体名称，用于审计 |
 | `video_channel_names` | 可选：归一化并去重后的视频渠道名称，用于审计 |
@@ -64,6 +64,22 @@
 | `data_package` | `none` / `pack1` / `pack2` / `pack3` |
 
 只有 `annual_ads_wan_for_reference`、没有 `monthly_ads_wan` 时，计算器返回 `needs_clarification`，不得把全年量除以 12，也不得输出正式报价。
+
+## 实际报价金额
+
+金额词与币种词组合时优先识别为报价，不要当作用量。例如：
+
+```text
+媒体 TT、FB；每月 12 万 Ad；120 个用户；7000 个广告账户；美金 11500
+```
+
+应设置：
+
+```json
+{"currency": "usd", "actual_quote": 11500}
+```
+
+计算器会保留原有的“实际报价 ÷ 调整后活动价”最终核算折扣，并额外输出“实际报价 ÷ 原活动价总价值”的折扣。没有实际报价时，额外折扣字段为 `null`。
 
 ## “套餐 + 加购”表达
 

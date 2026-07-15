@@ -1,0 +1,13 @@
+{
+  "passed": false,
+  "score": 0.67,
+  "reason": "四项既有能力通过，但缺少两项新折扣输出要求。",
+  "expectations": [
+    {"text": "识别 USD 实际报价", "passed": true, "evidence": "actual_quote = 11500。"},
+    {"text": "原活动价正确", "passed": true, "evidence": "original_activity_total = 36200。"},
+    {"text": "保留相对调整后活动价折扣", "passed": true, "evidence": "final_discount = 3.76。"},
+    {"text": "新增相对原活动价折扣", "passed": false, "evidence": "旧版没有该字段和公式。"},
+    {"text": "未扣未提及权益", "passed": true, "evidence": "只有大媒体未使用额度减去项。"},
+    {"text": "报告中明确双折扣口径", "passed": false, "evidence": "旧版只展示相对调整后活动价的折扣。"}
+  ]
+}

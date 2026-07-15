@@ -1,0 +1,12 @@
+[
+  {
+    "prompt": "明确报价场景（新版 Skill）",
+    "category": "with_skill",
+    "expected_behavior": "在原有报价内容之外，新增当前报价相对原活动价总价值的折扣。"
+  },
+  {
+    "prompt": "明确报价场景（旧版 Skill）",
+    "category": "old_skill",
+    "expected_behavior": "作为旧版本基线，验证是否缺少新折扣口径。"
+  }
+]
