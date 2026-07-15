@@ -10,9 +10,12 @@ import {
   Gauge,
   Info,
   Layers3,
+  MinusCircle,
+  Plus,
   RefreshCcw,
   ShieldCheck,
   Sparkles,
+  Trash2,
   Users,
   Workflow,
   Zap,
@@ -21,6 +24,7 @@ import {
   DEFAULT_NEEDS,
   PLANS,
   formatMoney,
+  getDeductibleItems,
   recommendQuote,
   type Currency,
   type DataPackage,
@@ -29,6 +33,7 @@ import {
 } from './pricing';
 
 type PlanMode = 'auto' | PlanId;
+type DeductionSelection = { id: string; quantity: number };
 
 const EMPTY_NEEDS: QuoteNeeds = {
   majorMedia: 0,
@@ -103,15 +108,31 @@ export default function App() {
   const [currency, setCurrency] = useState<Currency>('usd');
   const [planMode, setPlanMode] = useState<PlanMode>('auto');
   const [needs, setNeeds] = useState<QuoteNeeds>(DEFAULT_NEEDS);
+  const [deductions, setDeductions] = useState<DeductionSelection[]>([]);
 
   const quote = useMemo(() => recommendQuote(needs, currency), [currency, needs]);
   const selected = planMode === 'auto'
     ? quote.recommended
     : quote.options.find((option) => option.plan.id === planMode) ?? quote.recommended;
   const selectedIsRecommended = selected.plan.id === quote.recommended.plan.id;
+  const deductibleItems = useMemo(() => getDeductibleItems(selected.plan.id, currency), [currency, selected.plan.id]);
+  const deductionLines = deductions.map((selection) => {
+    const item = deductibleItems.find((candidate) => candidate.id === selection.id);
+    return item ? { ...item, quantity: selection.quantity, amount: item.price * selection.quantity } : null;
+  }).filter((line): line is NonNullable<typeof line> => Boolean(line));
+  const deductionTotal = deductionLines.reduce((sum, line) => sum + line.amount, 0);
+  const appliedDeduction = Math.min(deductionTotal, selected.listTotal);
+  const adjustedListTotal = Math.max(0, selected.listTotal - appliedDeduction);
+  const adjustedRecommendedPrice = Math.round(adjustedListTotal * 0.9);
+  const adjustedMinimumPrice = Math.round(adjustedListTotal * 0.6);
+  const adjustedActivityTotal = Math.max(0, selected.activityTotal - appliedDeduction);
 
   const update = <K extends keyof QuoteNeeds>(key: K, value: QuoteNeeds[K]) => {
     setNeeds((current) => ({ ...current, [key]: value }));
+  };
+
+  const updateDeduction = (index: number, patch: Partial<DeductionSelection>) => {
+    setDeductions((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, ...patch } : item));
   };
 
   return (
@@ -205,6 +226,32 @@ export default function App() {
               </select>
             </label>
           </div>
+
+          <div className="input-section adjustment-section">
+            <div className="input-section-title"><MinusCircle size={16} /><span><strong>商务调整 · 减去项</strong><small>不参与套餐推荐，仅调整当前报价</small></span></div>
+            <div className="deduction-editor">
+              {deductions.length === 0 && <div className="deduction-empty">暂无减去项，可按业务情况灵活扣减成本</div>}
+              {deductions.map((selection, index) => {
+                const item = deductibleItems.find((candidate) => candidate.id === selection.id) ?? deductibleItems[0];
+                return (
+                  <div className="deduction-edit-row" key={`${selection.id}-${index}`}>
+                    <select value={selection.id} onChange={(event) => updateDeduction(index, { id: event.target.value })}>
+                      {deductibleItems.map((candidate) => (
+                        <option key={candidate.id} value={candidate.id} disabled={candidate.price === 0}>
+                          {candidate.label} · {candidate.price === 0 ? '套餐已含' : `${formatMoney(candidate.price, currency)}/${candidate.unit}`}
+                        </option>
+                      ))}
+                    </select>
+                    <label><input type="number" min="1" step="1" value={selection.quantity} onChange={(event) => updateDeduction(index, { quantity: Math.max(1, Number(event.target.value) || 1) })} /><span>{item.unit}</span></label>
+                    <b>−{formatMoney(item.price * selection.quantity, currency)}</b>
+                    <button aria-label="删除减去项" onClick={() => setDeductions((current) => current.filter((_, itemIndex) => itemIndex !== index))}><Trash2 size={15} /></button>
+                  </div>
+                );
+              })}
+            </div>
+            <button className="add-deduction" onClick={() => setDeductions((current) => [...current, { id: 'majorMedia', quantity: 1 }])}><Plus size={14} />添加减去项</button>
+            <p className="adjustment-note"><Info size={13} />枚举与加购目录一致，但按业务要求排除 Ad 创建总额度（不过期广告）。</p>
+          </div>
         </section>
 
         <aside className="quote-panel">
@@ -222,15 +269,16 @@ export default function App() {
           {!selected.eligible && <div className="invalid-notice"><Info size={15} /><span>{selected.unavailableReasons.join('；')}</span></div>}
 
           <div className="price-ladder">
-            <article className="price-card minimum"><span>最低成交价</span><strong>{formatMoney(selected.minimumPrice, currency)}</strong><small>刊例总价 × 60%</small></article>
-            <article className="price-card recommended"><div className="recommended-ribbon">建议对外报价</div><span>推荐报价</span><strong>{formatMoney(selected.recommendedPrice, currency)}</strong><small>刊例总价 × 90%</small></article>
-            <article className="price-card list"><span>刊例总价</span><strong>{formatMoney(selected.listTotal, currency)}</strong><small>套餐刊例 + 必要加购</small></article>
+            <article className="price-card minimum"><span>最低成交价</span><strong>{formatMoney(adjustedMinimumPrice, currency)}</strong><small>调整后刊例 × 60%</small></article>
+            <article className="price-card recommended"><div className="recommended-ribbon">建议对外报价</div><span>推荐报价</span><strong>{formatMoney(adjustedRecommendedPrice, currency)}</strong><small>调整后刊例 × 90%</small></article>
+            <article className="price-card list"><span>调整后刊例</span><strong>{formatMoney(adjustedListTotal, currency)}</strong><small>{deductionTotal > 0 ? `已减 ${formatMoney(appliedDeduction, currency)}` : '套餐刊例 + 必要加购'}</small></article>
           </div>
 
-          <div className="activity-reference"><Gauge size={15} /><span>官网活动价口径参考</span><b>{formatMoney(selected.activityTotal, currency)}</b></div>
+          <div className="activity-reference"><Gauge size={15} /><span>官网活动价口径参考{deductionTotal > 0 ? '（扣减后）' : ''}</span><b>{formatMoney(adjustedActivityTotal, currency)}</b></div>
+          {deductionTotal > selected.listTotal && <div className="invalid-notice"><Info size={15} /><span>减去项超过刊例总价，系统已将调整后刊例限制为 0。</span></div>}
 
           <div className="quote-breakdown">
-            <div className="breakdown-title"><div><CircleDollarSign size={17} /><span><strong>报价构成</strong><small>{selected.components.length} 个计价项目</small></span></div><b>刊例金额</b></div>
+            <div className="breakdown-title"><div><CircleDollarSign size={17} /><span><strong>报价构成</strong><small>{selected.components.length + deductionLines.length} 个计价/调整项目</small></span></div><b>刊例金额</b></div>
             <div className="component-list">
               {selected.components.map((line, index) => (
                 <div className="component-row" key={`${line.id}-${index}`}>
@@ -239,7 +287,15 @@ export default function App() {
                   <b>{formatMoney(line.listAmount, currency)}</b>
                 </div>
               ))}
+              {deductionLines.map((line, index) => (
+                <div className="component-row deduction-component" key={`deduction-${line.id}-${index}`}>
+                  <span className="component-index">−{String(index + 1).padStart(2, '0')}</span>
+                  <span className="component-copy"><strong>减去：{line.label}</strong><small>{line.quantity}{line.unit} × {formatMoney(line.price, currency)}</small></span>
+                  <b>−{formatMoney(line.amount, currency)}</b>
+                </div>
+              ))}
             </div>
+            {deductionTotal > 0 && <div className="deduction-total"><span>减去项合计</span><b>−{formatMoney(appliedDeduction, currency)}</b></div>}
           </div>
 
           {selected.coverage.length > 0 && (
@@ -258,7 +314,7 @@ export default function App() {
 
       <section className="comparison-section">
         <div className="comparison-header">
-          <div><span className="step-tag">02 / 方案复核</span><h2>四档套餐横向试算</h2><p>自动推荐按刊例总价排序，再比较加购项目数与套餐档位。</p></div>
+          <div><span className="step-tag">02 / 方案复核</span><h2>四档套餐横向试算</h2><p>自动推荐按原始刊例总价排序；减去项不参与套餐排名。</p></div>
           <BarChart3 size={28} />
         </div>
         <div className="comparison-grid">

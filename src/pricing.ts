@@ -84,6 +84,13 @@ export type QuoteOption = {
   recommendedPrice: number;
 };
 
+export type DeductibleItem = {
+  id: string;
+  label: string;
+  unit: string;
+  price: number;
+};
+
 export const DEFAULT_NEEDS: QuoteNeeds = {
   majorMedia: 2,
   videoChannels: 0,
@@ -292,4 +299,24 @@ export function recommendQuote(needs: QuoteNeeds, currency: Currency) {
 
 export function formatMoney(value: number, currency: Currency) {
   return `${currency === 'cny' ? '¥' : '$'}${Math.round(value).toLocaleString(currency === 'cny' ? 'zh-CN' : 'en-US')}`;
+}
+
+export function getDeductibleItems(planId: PlanId, currency: Currency): DeductibleItem[] {
+  const flowPrice = planId === 'vip' ? 0 : FLOW_PRICE[planId][currency];
+  return [
+    { id: 'majorMedia', label: '大媒体渠道', unit: '个', price: ADDON_PRICE.majorMedia[currency] },
+    { id: 'monthlyAds', label: '每月 Ad 创建量', unit: '万/月', price: ADDON_PRICE.monthlyAds[currency] },
+    { id: 'aiRule', label: 'AI 助手规则', unit: '条', price: ADDON_PRICE.aiRule[currency] },
+    { id: 'adAccount', label: '广告账户', unit: '百个', price: ADDON_PRICE.adAccount[currency] },
+    { id: 'adAccountHigh', label: '高频广告账户', unit: '百个', price: ADDON_PRICE.adAccountHigh[currency] },
+    { id: 'scheduledReport', label: '定时报表', unit: '条', price: ADDON_PRICE.scheduledReport[currency] },
+    { id: 'user', label: '用户', unit: '人', price: ADDON_PRICE.user[currency] },
+    { id: 'storage', label: '素材库容量', unit: 'T', price: ADDON_PRICE.storage[currency] },
+    { id: 'youtube', label: 'YouTube 频道', unit: '个', price: ADDON_PRICE.youtube[currency] },
+    { id: 'subChannel', label: '子渠道报表', unit: '个应用', price: ADDON_PRICE.subChannel[currency] },
+    { id: 'trafficPool', label: '流量池', unit: '项', price: flowPrice },
+    { id: 'trial', label: 'Mintegral 一键试新', unit: '次', price: ADDON_PRICE.trial[currency] },
+    { id: 'reportApi', label: '标准 Report API', unit: '项', price: ADDON_PRICE.reportApi[currency] },
+    { id: 'attributionApi', label: '归因数据 API', unit: '项', price: ADDON_PRICE.attributionApi[currency] },
+  ];
 }
