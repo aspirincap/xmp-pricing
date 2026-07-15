@@ -33,7 +33,7 @@ class QuoteCalculatorTests(unittest.TestCase):
         self.assertEqual(result["minimum_price_60"], 16170)
         self.assertEqual(result["final_discount"], 9.0)
         self.assertIsNone(result["actual_quote"])
-        self.assertIsNone(result["current_quote_discount_vs_original_activity"])
+        self.assertNotIn("current_quote_discount_vs_original_activity", result)
         self.assertEqual(result["suggested_quote"], 24255)
         self.assertEqual(
             {item["item_id"]: item["subtotal"] for item in result["deductions"]},
@@ -45,7 +45,7 @@ class QuoteCalculatorTests(unittest.TestCase):
             {"基础版": 51700, "高级版": 47650, "专业版": 44000, "VIP 版": 36200},
         )
 
-    def test_explicit_quote_adds_discount_against_original_activity_total(self) -> None:
+    def test_explicit_quote_only_reports_discount_against_adjusted_activity_total(self) -> None:
         result = calculate(
             {
                 "currency": "usd",
@@ -66,12 +66,13 @@ class QuoteCalculatorTests(unittest.TestCase):
         self.assertEqual(result["deduction_total"], 5600)
         self.assertEqual(result["adjusted_activity_total"], 30600)
         self.assertEqual(result["final_discount"], 3.76)
-        self.assertEqual(result["current_quote_discount_vs_original_activity"], 3.18)
+        self.assertNotIn("current_quote_discount_vs_original_activity", result)
         self.assertEqual(result["recommended_price_90"], 27540)
         self.assertEqual(result["minimum_price_60"], 18360)
         markdown = render_markdown(result)
-        self.assertIn("当前报价相对原活动价折扣：** 3.18 折", markdown)
-        self.assertIn("$11,500 ÷ 原活动价总价值 $36,200 × 10 = 3.18 折", markdown)
+        self.assertIn("当前报价相对调整后活动价折扣：** 3.76 折", markdown)
+        self.assertNotIn("当前报价相对原活动价折扣", markdown)
+        self.assertNotIn("$11,500 ÷ 原活动价总价值", markdown)
         self.assertTrue(any("低于 6 折最低价" in warning for warning in result["warnings"]))
 
     def test_non_expiring_ad_is_an_independent_pool_and_never_auto_deducted(self) -> None:

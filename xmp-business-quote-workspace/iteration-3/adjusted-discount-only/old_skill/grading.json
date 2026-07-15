@@ -1,0 +1,11 @@
+{
+  "passed": false,
+  "score": 0.75,
+  "reason": "金额与 3.76 折正确，但多显示了相对原活动价的 3.18 折。",
+  "expectations": [
+    {"text": "实际报价正确", "passed": true, "evidence": "实际报价为 $11,500。"},
+    {"text": "调整后活动价正确", "passed": true, "evidence": "调整后活动价为 $30,600。"},
+    {"text": "折扣正确", "passed": true, "evidence": "相对调整后活动价为 3.76 折。"},
+    {"text": "单一折扣口径", "passed": false, "evidence": "额外显示相对原活动价的 3.18 折。"}
+  ]
+}

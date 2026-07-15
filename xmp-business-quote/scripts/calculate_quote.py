@@ -920,7 +920,6 @@ def incomplete_result(
         "actual_quote": None,
         "suggested_quote": None,
         "final_discount": None,
-        "current_quote_discount_vs_original_activity": None,
         "original_activity_total": None,
         "deduction_total": None,
         "adjusted_activity_total": None,
@@ -1022,11 +1021,6 @@ def calculate(request: dict[str, Any]) -> dict[str, Any]:
         actual_quote = round(number(request["actual_quote"], "actual_quote"))
     quote_for_discount = actual_quote if actual_quote is not None else recommended_price
     final_discount = round(quote_for_discount / adjusted_total * 10, 2) if adjusted_total else None
-    current_quote_discount_vs_original = (
-        round(actual_quote / selected["original_activity_total"] * 10, 2)
-        if actual_quote is not None and selected["original_activity_total"]
-        else None
-    )
     if actual_quote is not None and actual_quote < minimum_price:
         warnings.append("实际报价低于 6 折最低价，需要额外审批")
 
@@ -1074,10 +1068,6 @@ def calculate(request: dict[str, Any]) -> dict[str, Any]:
         trace.append(
             f"最终核算折扣 = {quoted_label} {money(quote_for_discount, currency)} ÷ 调整后活动价 {money(adjusted_total, currency)} × 10 = {final_discount:.2f} 折"
         )
-    if current_quote_discount_vs_original is not None:
-        trace.append(
-            f"当前报价相对原活动价折扣 = 实际报价 {money(actual_quote, currency)} ÷ 原活动价总价值 {money(selected['original_activity_total'], currency)} × 10 = {current_quote_discount_vs_original:.2f} 折"
-        )
 
     return {
         "status": "ok" if selected["eligible"] else "simulation_ineligible",
@@ -1090,7 +1080,6 @@ def calculate(request: dict[str, Any]) -> dict[str, Any]:
         "actual_quote": actual_quote,
         "suggested_quote": recommended_price,
         "final_discount": final_discount,
-        "current_quote_discount_vs_original_activity": current_quote_discount_vs_original,
         "original_activity_total": selected["original_activity_total"],
         "deduction_total": deduction_total,
         "adjusted_activity_total": round(adjusted_total),
@@ -1159,19 +1148,14 @@ def render_markdown(result: dict[str, Any]) -> str:
     quoted_amount = result["actual_quote"] if result["actual_quote"] is not None else result["suggested_quote"]
     quoted_label = "实际报价金额" if result["actual_quote"] is not None else "建议实际报价金额"
     discount_text = f"{result['final_discount']:.2f} 折" if result["final_discount"] is not None else "无法计算"
-    original_discount_line = (
-        f"- **当前报价相对原活动价折扣：** {result['current_quote_discount_vs_original_activity']:.2f} 折"
-        if result["current_quote_discount_vs_original_activity"] is not None
-        else None
-    )
+    discount_label = "当前报价相对调整后活动价折扣" if result["actual_quote"] is not None else "建议报价相对调整后活动价折扣"
     mode_label = "指定套餐模拟" if result["recommendation_mode"] == "user_specified" else "自动推荐"
     lines = [
         "# 报价测算结果",
         "",
         f"- **推荐套餐：** {result['recommended_plan']}（{mode_label}）",
-        f"- **最终核算折扣：** {discount_text}{'（基于 9 折建议报价，相对调整后活动价）' if result['actual_quote'] is None else '（相对调整后活动价）'}",
+        f"- **{discount_label}：** {discount_text}",
         f"- **{quoted_label}：** {money(quoted_amount, currency)}",
-        *([original_discount_line] if original_discount_line else []),
         f"- **原活动价总价值：** {money(result['original_activity_total'], currency)}",
         f"- **减去项合计：** −{money(result['deduction_total'], currency)}",
         f"- **调整后活动价：** {money(result['adjusted_activity_total'], currency)}",

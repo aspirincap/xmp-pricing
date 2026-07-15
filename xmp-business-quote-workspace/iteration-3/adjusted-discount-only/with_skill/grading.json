@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "score": 1.0,
+  "reason": "四项断言全部满足。",
+  "expectations": [
+    {"text": "实际报价正确", "passed": true, "evidence": "实际报价为 $11,500。"},
+    {"text": "调整后活动价正确", "passed": true, "evidence": "调整后活动价为 $30,600。"},
+    {"text": "折扣正确", "passed": true, "evidence": "11,500 ÷ 30,600 × 10 = 3.76 折。"},
+    {"text": "单一折扣口径", "passed": true, "evidence": "输出和 JSON 均不含相对原活动价折扣。"}
+  ]
+}
