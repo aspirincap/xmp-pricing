@@ -1,0 +1,13 @@
+{
+  "eval_id": 7,
+  "eval_name": "basic-plus-api-plus-one-extra-major-media",
+  "prompt": "基础版 + API + 一个大媒体",
+  "assertions": [
+    "加号表达中的一个大媒体按基础版之外额外加购 1 个处理，总覆盖需求为 2 个",
+    "API 默认识别为标准 Report API",
+    "未指定币种时分别输出 CNY 与 USD，不做汇率换算",
+    "CNY 原活动价 71,000，9 折 63,900，6 折 42,600",
+    "USD 原活动价 9,950，9 折 8,955，6 折 5,970",
+    "没有依据时不生成减去项"
+  ]
+}

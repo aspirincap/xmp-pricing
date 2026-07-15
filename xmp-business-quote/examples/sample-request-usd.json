@@ -1,0 +1,15 @@
+{
+  "currency": "usd",
+  "deduction_mode": "auto",
+  "major_media_names": ["TikTok", "Meta"],
+  "needs": {
+    "major_media": 2,
+    "monthly_ads_wan": 12,
+    "annual_ads_wan_for_reference": 144,
+    "users": 120,
+    "ad_accounts": 7000,
+    "report_api": false,
+    "trial_runs": 0
+  },
+  "explicit_no": ["report_api", "trial_runs"]
+}

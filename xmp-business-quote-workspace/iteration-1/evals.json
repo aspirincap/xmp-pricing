@@ -1,0 +1,12 @@
+[
+  {
+    "prompt": "基础版 + API + 一个大媒体（使用 xmp-business-quote Skill）",
+    "category": "with_skill",
+    "expected_behavior": "识别为锁定基础版、加购标准 Report API 和 1 个额外大媒体；未指定币种时分别输出 CNY/USD，包含原活动价、9 折、6 折和构成。"
+  },
+  {
+    "prompt": "基础版 + API + 一个大媒体（不提供 Skill 或内部价格表）",
+    "category": "without_skill",
+    "expected_behavior": "作为基线，观察通用模型能否在没有内部价格依据时给出准确报价。"
+  }
+]

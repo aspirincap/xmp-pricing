@@ -1,0 +1,14 @@
+[
+  {
+    "prompt": "基础版 + API + 一个大媒体（使用 xmp-business-quote Skill）",
+    "passed": true,
+    "score": 1.0,
+    "reason": "正确解释加号语义，并由确定性脚本输出 CNY/USD 两套完整且可复核的报价。"
+  },
+  {
+    "prompt": "基础版 + API + 一个大媒体（不提供 Skill 或内部价格表）",
+    "passed": false,
+    "score": 0.0,
+    "reason": "基线模型明确表示缺少内部 SKU 与价格表，无法生成报价。"
+  }
+]

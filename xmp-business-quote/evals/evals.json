@@ -1,0 +1,212 @@
+{
+  "skill_name": "xmp-business-quote",
+  "evals": [
+    {
+      "prompt": "按美元给这个客户报价：媒体数量 TT、FB；全年需要 Ad 总数 144 万（每月 12 万）；用户数 120 个；广告账号 7000 个；API 和试新不要。请推荐合理套餐，并详细列出原活动价、减去项、调整后活动价、9 折推荐价、6 折最低价和报价构成。",
+      "category": "完整需求_自动推荐_自动减去未使用权益",
+      "expected_behavior": {
+        "must": [
+          "将 TT、FB 识别为 2 个大媒体，不把它们识别为视频渠道",
+          "将未限定的“API”按标准 Report API 处理；不得连带扣减未明确提及的归因数据 API",
+          "套餐推荐必须按减去项生效前的原活动价排序，减去项不得改变推荐套餐",
+          "详细展示套餐额度抵扣、必要加购、每条减去项、计价单位、单价与小计",
+          "没有客户实际报价时，以 9 折推荐价作为建议实际报价，并标明核算折扣为 9.00 折"
+        ],
+        "key_results": {
+          "currency": "USD",
+          "recommended_plan": "VIP 版",
+          "recognized_needs": {
+            "major_media": 2,
+            "monthly_ad_creation_wan": 12,
+            "annual_ad_creation_wan_for_reference": 144,
+            "users": 120,
+            "ad_accounts": 7000,
+            "report_api": false,
+            "trial_runs": 0
+          },
+          "components": [
+            "VIP 版活动价 $14,500",
+            "每月 Ad 创建额度增购 2 万/月：$2,800",
+            "用户增购 20 人：$1,400",
+            "广告账户增购 5000 个，即 50 个百账号计价单位：$17,500"
+          ],
+          "original_activity_total": 36200,
+          "deductions": [
+            "未使用大媒体额度 2 个：-$5,600",
+            "标准 Report API 1 项：-$1,650",
+            "Mintegral 一键试新 10 次：-$2,000"
+          ],
+          "deduction_total": 9250,
+          "adjusted_activity_total": 26950,
+          "recommended_price_90": 24255,
+          "minimum_price_60": 16170,
+          "final_discount": 9.0,
+          "plan_original_activity_comparison": {
+            "基础版": 51700,
+            "高级版": 47650,
+            "专业版": 44000,
+            "VIP 版": 36200
+          }
+        }
+      }
+    },
+    {
+      "prompt": "按人民币推荐套餐：Meta 1 个，每月 Ad 创建额度 3 万，另加 50w 不过期的 Ad，25 个用户，100 个广告账户。API 不需要。请给出三档价格和构成。",
+      "category": "不过期Ad创建总额度_单位与额度池隔离",
+      "expected_behavior": {
+        "must": [
+          "把“50w 不过期的 Ad”解析为 50 万个不过期 Ad 创建总额度，即计价 quantity=50，而不是 500000 个计价单位",
+          "不过期 Ad 创建总额度与每月 Ad 创建额度分属两个独立额度池，不得互相抵扣",
+          "不得把 50w 识别成客户报价金额",
+          "输出名称必须是“不过期 Ad 创建总额度”，不得写成“Ad 创建总额度”",
+          "不过期 Ad 创建总额度不得出现在减去项枚举或减去项明细中"
+        ],
+        "key_results": {
+          "currency": "CNY",
+          "recommended_plan": "基础版",
+          "recognized_needs": {
+            "monthly_ad_creation_wan": 3,
+            "non_expiring_ad_creation_total_wan": 50,
+            "users": 25,
+            "ad_accounts": 100
+          },
+          "components": [
+            "基础版活动价 ¥39,000",
+            "不过期 Ad 创建总额度 50 万：50 × ¥1,000 = ¥50,000"
+          ],
+          "original_activity_total": 89000,
+          "deduction_total": 0,
+          "adjusted_activity_total": 89000,
+          "recommended_price_90": 80100,
+          "minimum_price_60": 53400
+        }
+      }
+    },
+    {
+      "prompt": "人民币报价，不做任何减去项。大媒体只接 TikTok 1 个；视频渠道接 Mintegral、Unity、AppLovin 共 3 个；每月 Ad 3 万，用户 25 个，广告账户 100 个。请推荐套餐并说明视频渠道怎么计价。",
+      "category": "视频渠道_只校验容量不加价",
+      "expected_behavior": {
+        "must": [
+          "将 TikTok 计为 1 个大媒体，将 Mintegral、Unity、AppLovin 计为 3 个视频渠道",
+          "视频渠道不产生加购金额，但必须校验套餐的视频渠道容量",
+          "基础版的视频渠道容量 1 和高级版的容量 2 均不足；专业版容量 3，能够满足需求",
+          "遵守用户“不做任何减去项”的明确要求，不自动扣减专业版未使用权益"
+        ],
+        "key_results": {
+          "currency": "CNY",
+          "recommended_plan": "专业版",
+          "video_channel_charge": 0,
+          "ineligible_plans": [
+            "基础版",
+            "高级版"
+          ],
+          "original_activity_total": 89000,
+          "deduction_total": 0,
+          "adjusted_activity_total": 89000,
+          "recommended_price_90": 80100,
+          "minimum_price_60": 53400
+        }
+      }
+    },
+    {
+      "prompt": "客户合同明确指定专业版，按人民币模拟：只用 TT 1 个大媒体、每月 Ad 3 万、25 个用户、100 个广告账户，API 和试新都不要。不要替我升级或降级，这一单也不要做减去项。",
+      "category": "用户指定专业版_禁止自动换档",
+      "expected_behavior": {
+        "must": [
+          "严格按专业版模拟并标记“指定套餐模拟”，不得因为基础版更便宜而擅自切换",
+          "可以把基础版列为系统自动推荐的对比方案，但最终主方案仍必须是专业版",
+          "遵守“不做减去项”，不得扣除未使用大媒体、API、试新或其他套餐内权益",
+          "所有报价均以官网活动价为基准，不输出或使用“刊例价”字段"
+        ],
+        "key_results": {
+          "currency": "CNY",
+          "selected_plan": "专业版",
+          "selection_mode": "user_specified",
+          "automatic_candidate_for_comparison": "基础版",
+          "original_activity_total": 89000,
+          "deduction_total": 0,
+          "adjusted_activity_total": 89000,
+          "recommended_price_90": 80100,
+          "minimum_price_60": 53400
+        }
+      }
+    },
+    {
+      "prompt": "美元报价，不做减去项：Meta 1 个，每月 Ad 3 万，25 个用户，100 个广告账户；标准 Report API 和归因数据 API 两个都要。推荐最划算的套餐，API 要分别列价。",
+      "category": "双API_分别识别与计价",
+      "expected_behavior": {
+        "must": [
+          "把标准 Report API 与归因数据 API 识别为两个独立需求，不得合并、遗漏或重复",
+          "基础版不含两类 API，应分别增加 $1,650；专业版和 VIP 版已包含，不得在对应方案中重复加购",
+          "比较四档套餐的原活动价后推荐基础版",
+          "报价构成中必须出现两条独立 API 明细"
+        ],
+        "key_results": {
+          "currency": "USD",
+          "recommended_plan": "基础版",
+          "components": [
+            "基础版活动价 $5,500",
+            "标准 Report API $1,650",
+            "归因数据 API $1,650"
+          ],
+          "original_activity_total": 8800,
+          "deduction_total": 0,
+          "adjusted_activity_total": 8800,
+          "recommended_price_90": 7920,
+          "minimum_price_60": 5280
+        }
+      }
+    },
+    {
+      "prompt": "按美元报价：媒体 TT、FB，全年预计创建 Ad 144 万，用户 120 个，广告账户 7000 个，API 和试新不要。请直接推荐套餐和价格。",
+      "category": "缺少每月峰值_必须澄清",
+      "expected_behavior": {
+        "must": [
+          "识别到全年 144 万只是年度用量信息，不能擅自除以 12 推导每月 12 万",
+          "没有“不过期”语义时，不得把全年 144 万改当成不过期 Ad 创建总额度",
+          "明确追问客户的每月 Ad 创建额度或最高月份峰值",
+          "澄清前不得输出最终推荐套餐、原活动价、9 折推荐价或 6 折最低价"
+        ],
+        "key_results": {
+          "status": "needs_clarification",
+          "recognized_annual_ad_creation_wan": 144,
+          "monthly_ad_creation_wan": null,
+          "non_expiring_ad_creation_total_wan": 0,
+          "required_question": "请确认每月 Ad 创建额度或最高月份峰值是多少万/月？",
+          "final_quote": null
+        }
+      }
+    },
+    {
+      "prompt": "基础版 + API + 一个大媒体",
+      "category": "报价组合加号语义_未指定币种双报价",
+      "expected_behavior": {
+        "must": [
+          "把加号表达识别为锁定基础版后的加购组合，不得把一个大媒体误解为客户总共只需要一个",
+          "基础版已含一个大媒体，因此再加一个大媒体时，总覆盖需求为两个、付费增购为一个",
+          "未限定的 API 默认指标准 Report API",
+          "未指定币种时分别输出 CNY 与 USD 两套独立报价，不做汇率换算",
+          "没有明确不要或低于套餐内含的需求，不生成减去项"
+        ],
+        "key_results": {
+          "locked_plan": "基础版",
+          "recognized_total_major_media": 2,
+          "recognized_extra_major_media": 1,
+          "report_api": true,
+          "cny": {
+            "original_activity_total": 71000,
+            "deduction_total": 0,
+            "recommended_price_90": 63900,
+            "minimum_price_60": 42600
+          },
+          "usd": {
+            "original_activity_total": 9950,
+            "deduction_total": 0,
+            "recommended_price_90": 8955,
+            "minimum_price_60": 5970
+          }
+        }
+      }
+    }
+  ]
+}

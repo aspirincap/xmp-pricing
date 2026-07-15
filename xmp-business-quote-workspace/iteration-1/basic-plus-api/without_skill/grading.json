@@ -1,0 +1,13 @@
+{
+  "passed": false,
+  "score": 0.0,
+  "reason": "基线没有内部定价依据，未输出任何断言要求的金额。",
+  "expectations": [
+    {"text": "正确解释额外大媒体", "passed": false, "evidence": "没有给出需求解析。"},
+    {"text": "API 默认为标准 Report API", "passed": false, "evidence": "没有识别 API 类型。"},
+    {"text": "输出双币种独立报价", "passed": false, "evidence": "没有输出报价。"},
+    {"text": "CNY 数值正确", "passed": false, "evidence": "没有输出金额。"},
+    {"text": "USD 数值正确", "passed": false, "evidence": "没有输出金额。"},
+    {"text": "无无依据减去项", "passed": false, "evidence": "没有生成报价结构。"}
+  ]
+}

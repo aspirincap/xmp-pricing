@@ -1,0 +1,4 @@
+interface:
+  display_name: "XMP 商务报价"
+  short_description: "将销售需求转换为可审计的套餐推荐、减去项与双币种价格明细"
+  default_prompt: "使用 $xmp-business-quote 根据客户需求推荐套餐，并输出完整的人民币或美元报价构成。"

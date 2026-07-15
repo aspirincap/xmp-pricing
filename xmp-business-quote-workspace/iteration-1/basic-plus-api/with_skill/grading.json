@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "score": 1.0,
+  "reason": "六项断言全部满足。",
+  "expectations": [
+    {"text": "正确解释额外大媒体", "passed": true, "evidence": "输出写明基础版已含 1 个，再增购 1 个，最终覆盖 2 个。"},
+    {"text": "API 默认为标准 Report API", "passed": true, "evidence": "两套构成均列出标准 Report API。"},
+    {"text": "输出双币种独立报价", "passed": true, "evidence": "分别输出 CNY 与 USD，引用两个官方价格页。"},
+    {"text": "CNY 数值正确", "passed": true, "evidence": "71,000 / 63,900 / 42,600。"},
+    {"text": "USD 数值正确", "passed": true, "evidence": "9,950 / 8,955 / 5,970。"},
+    {"text": "无无依据减去项", "passed": true, "evidence": "两套结果减去项均为 0。"}
+  ]
+}
