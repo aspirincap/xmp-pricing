@@ -240,6 +240,23 @@ class QuoteCalculatorTests(unittest.TestCase):
         self.assertEqual(result["deduction_total"], 0)
         self.assertTrue(any("不能作为减去项" in warning for warning in result["warnings"]))
 
+    def test_verified_pricing_check_metadata_is_carried_into_result(self) -> None:
+        result = calculate(
+            {
+                "currency": "usd",
+                "pricing_check": {
+                    "status": "verified",
+                    "checked_at": "2026-07-16T11:03:18+08:00",
+                    "sources": [{"currency": "usd", "url": "https://help-xmp.mobvista.com/docs/xmp_price_usd"}],
+                },
+                "needs": {"major_media": 1},
+            }
+        )
+        self.assertEqual(result["pricing_check_status"], "verified")
+        self.assertEqual(result["pricing_checked_at"], "2026-07-16T11:03:18+08:00")
+        self.assertEqual(result["pricing_check_sources"][0]["currency"], "usd")
+        self.assertIn("本次报价单检查时间：2026-07-16T11:03:18+08:00", render_markdown(result))
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

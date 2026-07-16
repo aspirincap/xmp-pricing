@@ -9,16 +9,27 @@ description: XMP 商务报价、套餐推荐与折扣测算。只要用户提到
 
 ## 每次执行
 
+0. **初始化报价单核验。** 每次触发 Skill，先实时读取两个官方报价页面，不得只依赖本地价格快照：
+
+   ```bash
+   python3 <skill-directory>/scripts/check_pricing.py \
+     --strict --output /tmp/xmp-pricing-check.json
+   ```
+
+   只有命令返回 `status: "verified"` 才继续。若网络不可用、页面价格标记缺失或与本地快照不一致，停止正式报价，先更新 `references/pricing-cny.md`、`references/pricing-usd.md`、计算器和测试。该检查会记录本次核验时间、页面标题、页面修改日期和内容哈希。
 1. 阅读 `references/business-rules.md`，遵守业务口径。
 2. 按 `references/request-schema.md` 从用户文本或截图提取请求。
 3. 只有关键输入存在歧义且会改变金额时才追问；其他缺失字段保持“不确定/未提供”，不要自动填 0。
-4. 将请求保存到临时 JSON。定位本 Skill 的目录后，用绝对路径调用计算器：
+4. 将请求保存到临时 JSON。定位本 Skill 的目录后，用绝对路径调用计算器，并传入刚才的核验结果：
 
    ```bash
-   python3 <skill-directory>/scripts/calculate_quote.py --input /tmp/xmp-quote-request.json --format markdown
+   python3 <skill-directory>/scripts/calculate_quote.py \
+     --input /tmp/xmp-quote-request.json \
+     --pricing-check /tmp/xmp-pricing-check.json \
+     --format markdown
    ```
 
-5. 直接使用计算器的 Markdown 结果。可以补一句解释，但不得改写金额或遗漏减去项、额度汇总、四档对比和来源。
+5. 直接使用计算器的 Markdown 结果。可以补一句解释，但不得改写金额或遗漏减去项、额度汇总、四档对比、报价单检查时间和来源。
 
 若用户要机器可读结果，使用 `--format json`。
 
@@ -117,6 +128,7 @@ description: XMP 商务报价、套餐推荐与折扣测算。只要用户提到
 - 使用脚本输出，不凭语言模型补算或四舍五入。
 - 保留“未提供”和“明确为 0”的差异。
 - 价格快照与官网不一致时停止报价，先更新参考与脚本并标注版本。
+- 每次输出必须注明本次官方报价单实时检查时间、检查状态和来源 URL；不要用价格版本日期代替本次检查时间。
 - 当前活动价有效期截至 2026-07-31；到期后必须先重新核验两个官方价格页并更新价格版本。
 - 高频 AI 的“套餐价格 × 1.5”按套餐官方活动价总额乘 1.5 处理。
 - Postback/S2S 同时需要但计费关系不明确时，提示人工确认，不猜测是否共用数据包。

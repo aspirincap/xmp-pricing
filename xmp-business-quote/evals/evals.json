@@ -231,6 +231,18 @@
           "minimum_price_60": 18360
         }
       }
+    },
+    {
+      "prompt": "首次初始化 XMP 报价 Skill 后，按 USD/CNY 官方报价单实时检查，再输出报价结果并注明本次检查时间。",
+      "category": "初始化实时报价单核验_输出检查时间",
+      "expected_behavior": {
+        "must": [
+          "先读取 https://help-xmp.mobvista.com/docs/xmp_price_usd 和 https://help-xmp.mobvista.com/docs/xmp_price_cny",
+          "官方页面不可访问或价格标记不一致时停止正式报价",
+          "正式报价结构化结果包含 pricing_check_status=verified 和 pricing_checked_at",
+          "人类可读结果的价格来源区块注明本次官方报价单检查时间、检查状态和来源 URL"
+        ]
+      }
     }
   ]
 }

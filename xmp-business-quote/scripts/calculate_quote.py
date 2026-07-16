@@ -7,13 +7,17 @@ import argparse
 import json
 import math
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 
 PLAN_ORDER = ["basic", "advanced", "pro", "vip"]
-PRICING_VERSION = "2026-07-15"
+PRICING_VERSION = "2026-07-16"
 OFFER_VALID_THROUGH = "2026-07-31"
+SOURCES_URL_USD = "https://help-xmp.mobvista.com/docs/xmp_price_usd"
+SOURCES_URL_CNY = "https://help-xmp.mobvista.com/docs/xmp_price_cny"
 
 PLANS: dict[str, dict[str, Any]] = {
     "basic": {
@@ -267,6 +271,22 @@ def pricing_source(currency: str) -> dict[str, str]:
         "basis": "官方活动优惠价（本 Skill 对外称套餐官方活动价）",
         "verified_on": PRICING_VERSION,
         "offer_valid_through": OFFER_VALID_THROUGH,
+    }
+
+
+def pricing_check_info(request: dict[str, Any]) -> dict[str, Any]:
+    """Return the live-price verification metadata to carry into every result."""
+    check = request.get("pricing_check") or {}
+    checked_at = check.get("checked_at") or request.get("pricing_checked_at")
+    if not checked_at:
+        checked_at = datetime.now(ZoneInfo("Asia/Shanghai")).isoformat(timespec="seconds")
+    return {
+        "status": str(check.get("status") or ("timestamp_only" if request.get("pricing_checked_at") else "not_verified")),
+        "checked_at": str(checked_at),
+        "sources": check.get("sources") or [
+            {"currency": "usd", "url": SOURCES_URL_USD},
+            {"currency": "cny", "url": SOURCES_URL_CNY},
+        ],
     }
 
 
@@ -909,6 +929,7 @@ def incomplete_result(
     required_questions: list[str],
     comparisons: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
+    check_info = pricing_check_info(request)
     return {
         "status": status,
         "recommended_plan": None,
@@ -949,6 +970,9 @@ def incomplete_result(
         "required_questions": required_questions,
         "pricing_source": pricing_source(currency),
         "pricing_version": PRICING_VERSION,
+        "pricing_check_status": check_info["status"],
+        "pricing_checked_at": check_info["checked_at"],
+        "pricing_check_sources": check_info["sources"],
     }
 
 
@@ -956,6 +980,7 @@ def calculate(request: dict[str, Any]) -> dict[str, Any]:
     currency = str(request.get("currency") or "").lower()
     if currency not in {"cny", "usd"}:
         raise ValueError("currency must be cny or usd")
+    check_info = pricing_check_info(request)
     locked_plan = request.get("locked_plan")
     if locked_plan is not None and locked_plan not in PLANS:
         raise ValueError("locked_plan must be basic, advanced, pro or vip")
@@ -1096,6 +1121,9 @@ def calculate(request: dict[str, Any]) -> dict[str, Any]:
         "required_questions": [],
         "pricing_source": pricing_source(currency),
         "pricing_version": PRICING_VERSION,
+        "pricing_check_status": check_info["status"],
+        "pricing_checked_at": check_info["checked_at"],
+        "pricing_check_sources": check_info["sources"],
     }
 
 
@@ -1140,6 +1168,8 @@ def render_markdown(result: dict[str, Any]) -> str:
                 "",
                 f"- 官方报价：{result['pricing_source']['url']}",
                 f"- 价格版本：{result['pricing_version']}",
+                f"- 本次报价单检查时间：{result['pricing_checked_at']}",
+                f"- 报价单检查状态：{result['pricing_check_status']}",
                 "- 关键输入确认前不输出正式推荐套餐、原活动价、9 折推荐价或 6 折最低价。",
             ]
         )
@@ -1239,6 +1269,8 @@ def render_markdown(result: dict[str, Any]) -> str:
             f"- 口径：{result['pricing_source']['basis']}，币种 {result['currency']}",
             f"- 官方报价：{result['pricing_source']['url']}",
             f"- 价格版本/核验日期：{result['pricing_version']}",
+            f"- 本次报价单检查时间：{result['pricing_checked_at']}",
+            f"- 报价单检查状态：{result['pricing_check_status']}",
             f"- 当前活动价有效期：截至 {result['pricing_source']['offer_valid_through']}，到期后需重新核验",
             "- 内部规则：只有大媒体产生渠道加购费用；视频渠道不额外收费但需满足套餐容量。",
         ]
@@ -1259,9 +1291,28 @@ def main() -> int:
     parser.add_argument("--input", help="Path to a JSON request file")
     parser.add_argument("--json", help="Inline JSON request")
     parser.add_argument("--format", choices=("json", "markdown"), default="json")
+    parser.add_argument(
+        "--pricing-check",
+        help="JSON produced by scripts/check_pricing.py; required for a formal quote",
+    )
+    parser.add_argument(
+        "--allow-unverified",
+        action="store_true",
+        help="Development/test escape hatch; do not use for a formal quote",
+    )
     args = parser.parse_args()
     try:
-        result = calculate(load_request(args))
+        request = load_request(args)
+        if args.pricing_check:
+            check = json.loads(Path(args.pricing_check).read_text(encoding="utf-8"))
+            if check.get("status") != "verified":
+                raise ValueError("live pricing check is not verified; update the pricing snapshot before quoting")
+            request["pricing_check"] = check
+        elif not args.allow_unverified:
+            raise ValueError(
+                "formal quotes require a live pricing check; run check_pricing.py --strict first and pass --pricing-check"
+            )
+        result = calculate(request)
     except (ValueError, TypeError, json.JSONDecodeError) as error:
         print(json.dumps({"error": str(error)}, ensure_ascii=False), file=sys.stderr)
         return 2
