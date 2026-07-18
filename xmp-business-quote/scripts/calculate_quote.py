@@ -1094,15 +1094,15 @@ def calculate(request: dict[str, Any]) -> dict[str, Any]:
     if actual_quote is None:
         trace.extend(
             [
-                f"6 折报价 = {money(adjusted_total, currency)} × 60% = {money(discount_prices['6折'], currency)}",
-                f"7 折报价 = {money(adjusted_total, currency)} × 70% = {money(discount_prices['7折'], currency)}",
-                f"8 折报价 = {money(adjusted_total, currency)} × 80% = {money(discount_prices['8折'], currency)}",
-                f"9 折报价 = {money(adjusted_total, currency)} × 90% = {money(discount_prices['9折'], currency)}",
+                f"6 折报价：{money(discount_prices['6折'], currency)}",
+                f"7 折报价：{money(discount_prices['7折'], currency)}",
+                f"8 折报价：{money(discount_prices['8折'], currency)}",
+                f"9 折报价：{money(discount_prices['9折'], currency)}",
             ]
         )
     if final_discount is not None:
         trace.append(
-            f"最终核算折扣 = {quoted_label} {money(quote_for_discount, currency)} ÷ 调整后活动价 {money(adjusted_total, currency)} × 10 = {final_discount:.2f} 折"
+            f"最终核算折扣：{final_discount:.2f} 折"
         )
 
     return {
