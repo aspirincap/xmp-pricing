@@ -1,0 +1,52 @@
+{
+  "status": "verified",
+  "checked_at": "2026-07-17T17:01:59+08:00",
+  "timezone": "Asia/Shanghai",
+  "sources": [
+    {
+      "currency": "usd",
+      "url": "https://help-xmp.mobvista.com/docs/xmp_price_usd",
+      "title": "XMP 应用版套餐-美元-XMP Help Center",
+      "modified_dates_found": [
+        "2026-06-26",
+        "2026-07-08"
+      ],
+      "content_sha256": "45b54114732692ce2598c4db0a7d0b994a3107048b6e78c79d609a9c891e0b94",
+      "required_price_markers": [
+        "5500",
+        "9500",
+        "12500",
+        "14500",
+        "2800",
+        "1400",
+        "120",
+        "1650"
+      ],
+      "missing_price_markers": [],
+      "status": "verified"
+    },
+    {
+      "currency": "cny",
+      "url": "https://help-xmp.mobvista.com/docs/xmp_price_cny",
+      "title": "XMP 应用版套餐",
+      "modified_dates_found": [
+        "2026-06-26"
+      ],
+      "content_sha256": "e9b411b123a450ab8e5621fa11da0e9bb0f00d6ff1963faf0f935c26d2fe5ae7",
+      "required_price_markers": [
+        "39000",
+        "69000",
+        "89000",
+        "100000",
+        "20000",
+        "10000",
+        "1000",
+        "12000"
+      ],
+      "missing_price_markers": [],
+      "status": "verified"
+    }
+  ],
+  "errors": [],
+  "instruction": "若 status 不是 verified，先更新本地价格快照和测试，不得输出正式报价。"
+}

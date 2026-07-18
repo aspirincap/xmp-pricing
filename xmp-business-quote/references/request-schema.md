@@ -31,7 +31,7 @@
 | `currency` | 必填：`cny` 或 `usd`；未指定时由调用方分别计算两次 |
 | `locked_plan` | 可选：`basic` / `advanced` / `pro` / `vip` |
 | `actual_quote` | 可选：客户已确认或商务拟报金额；例如“美金11500”写为 `11500`，未提供时保持 `null` |
-| `pricing_check` | 由 `scripts/check_pricing.py --strict` 生成；正式报价必须传入 `status: "verified"` 的检查结果 |
+| `pricing_check` | 由初始化脚本生成并保存为 `references/pricing-check.json`；正式报价复用 `status: "verified"` 的初始化快照 |
 | `deduction_mode` | `auto`（默认）或 `none`；“不做减去项”必须用 `none` |
 | `major_media_names` | 可选：归一化并去重后的大媒体名称，用于审计 |
 | `video_channel_names` | 可选：归一化并去重后的视频渠道名称，用于审计 |

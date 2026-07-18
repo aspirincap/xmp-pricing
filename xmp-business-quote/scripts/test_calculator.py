@@ -31,6 +31,7 @@ class QuoteCalculatorTests(unittest.TestCase):
         self.assertEqual(result["adjusted_activity_total"], 26950)
         self.assertEqual(result["recommended_price_90"], 24255)
         self.assertEqual(result["minimum_price_60"], 16170)
+        self.assertEqual(result["discount_prices"], {"6折": 16170, "7折": 18865, "8折": 21560, "9折": 24255})
         self.assertEqual(result["final_discount"], 9.0)
         self.assertIsNone(result["actual_quote"])
         self.assertNotIn("current_quote_discount_vs_original_activity", result)
@@ -73,7 +74,9 @@ class QuoteCalculatorTests(unittest.TestCase):
         self.assertIn("当前报价相对调整后活动价折扣：** 3.76 折", markdown)
         self.assertNotIn("当前报价相对原活动价折扣", markdown)
         self.assertNotIn("$11,500 ÷ 原活动价总价值", markdown)
-        self.assertTrue(any("低于 6 折最低价" in warning for warning in result["warnings"]))
+        self.assertNotIn("折扣报价", markdown)
+        self.assertNotIn("6 折：", markdown)
+        self.assertNotIn("低于 6 折最低价", " ".join(result["warnings"]))
 
     def test_non_expiring_ad_is_an_independent_pool_and_never_auto_deducted(self) -> None:
         result = calculate(
@@ -255,7 +258,7 @@ class QuoteCalculatorTests(unittest.TestCase):
         self.assertEqual(result["pricing_check_status"], "verified")
         self.assertEqual(result["pricing_checked_at"], "2026-07-16T11:03:18+08:00")
         self.assertEqual(result["pricing_check_sources"][0]["currency"], "usd")
-        self.assertIn("本次报价单检查时间：2026-07-16T11:03:18+08:00", render_markdown(result))
+        self.assertIn("报价单获取时间：2026-07-16T11:03:18+08:00", render_markdown(result))
 
 
 if __name__ == "__main__":

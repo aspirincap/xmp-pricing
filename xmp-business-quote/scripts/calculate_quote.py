@@ -275,7 +275,7 @@ def pricing_source(currency: str) -> dict[str, str]:
 
 
 def pricing_check_info(request: dict[str, Any]) -> dict[str, Any]:
-    """Return the live-price verification metadata to carry into every result."""
+    """Return the initialization snapshot metadata to carry into every result."""
     check = request.get("pricing_check") or {}
     checked_at = check.get("checked_at") or request.get("pricing_checked_at")
     if not checked_at:
@@ -946,6 +946,7 @@ def incomplete_result(
         "adjusted_activity_total": None,
         "recommended_price_90": None,
         "minimum_price_60": None,
+        "discount_prices": {"6折": None, "7折": None, "8折": None, "9折": None},
         "components": [],
         "deductions": [],
         "coverage": [],
@@ -1038,17 +1039,20 @@ def calculate(request: dict[str, Any]) -> dict[str, Any]:
     adjusted_total = max(0, selected["original_activity_total"] - deduction_total)
     if deduction_total > selected["original_activity_total"]:
         warnings.append("减去项合计超过原活动价总价值，调整后活动价已限制为 0，请人工复核")
-    recommended_price = round(adjusted_total * 0.9)
-    minimum_price = round(adjusted_total * 0.6)
+    discount_prices = {
+        "6折": round(adjusted_total * 0.6),
+        "7折": round(adjusted_total * 0.7),
+        "8折": round(adjusted_total * 0.8),
+        "9折": round(adjusted_total * 0.9),
+    }
+    recommended_price = discount_prices["9折"]
+    minimum_price = discount_prices["6折"]  # backward-compatible structured alias
 
     actual_quote: int | None = None
     if request.get("actual_quote") is not None:
         actual_quote = round(number(request["actual_quote"], "actual_quote"))
     quote_for_discount = actual_quote if actual_quote is not None else recommended_price
     final_discount = round(quote_for_discount / adjusted_total * 10, 2) if adjusted_total else None
-    if actual_quote is not None and actual_quote < minimum_price:
-        warnings.append("实际报价低于 6 折最低价，需要额外审批")
-
     if recommendation_mode == "user_specified":
         automatic_name = automatic["plan_name"] if automatic else "无可用标准套餐"
         reason = f"按用户指定模拟 {selected['plan_name']}；按原活动价自动推荐结果为 {automatic_name}。"
@@ -1086,9 +1090,16 @@ def calculate(request: dict[str, Any]) -> dict[str, Any]:
     trace = [
         f"原活动价总价值 = 套餐官方活动价 {money(selected['base_activity_price'], currency)} + 必要加购 {money(selected['addon_total'], currency)} = {money(selected['original_activity_total'], currency)}",
         f"调整后活动价 = max(0, {money(selected['original_activity_total'], currency)} - {money(deduction_total, currency)}) = {money(adjusted_total, currency)}",
-        f"9 折推荐价 = {money(adjusted_total, currency)} × 90% = {money(recommended_price, currency)}",
-        f"6 折最低价 = {money(adjusted_total, currency)} × 60% = {money(minimum_price, currency)}",
     ]
+    if actual_quote is None:
+        trace.extend(
+            [
+                f"6 折报价 = {money(adjusted_total, currency)} × 60% = {money(discount_prices['6折'], currency)}",
+                f"7 折报价 = {money(adjusted_total, currency)} × 70% = {money(discount_prices['7折'], currency)}",
+                f"8 折报价 = {money(adjusted_total, currency)} × 80% = {money(discount_prices['8折'], currency)}",
+                f"9 折报价 = {money(adjusted_total, currency)} × 90% = {money(discount_prices['9折'], currency)}",
+            ]
+        )
     if final_discount is not None:
         trace.append(
             f"最终核算折扣 = {quoted_label} {money(quote_for_discount, currency)} ÷ 调整后活动价 {money(adjusted_total, currency)} × 10 = {final_discount:.2f} 折"
@@ -1110,6 +1121,7 @@ def calculate(request: dict[str, Any]) -> dict[str, Any]:
         "adjusted_activity_total": round(adjusted_total),
         "recommended_price_90": recommended_price,
         "minimum_price_60": minimum_price,
+        "discount_prices": discount_prices,
         "components": selected["components"],
         "deductions": deductions,
         "coverage": selected["coverage"],
@@ -1168,9 +1180,9 @@ def render_markdown(result: dict[str, Any]) -> str:
                 "",
                 f"- 官方报价：{result['pricing_source']['url']}",
                 f"- 价格版本：{result['pricing_version']}",
-                f"- 本次报价单检查时间：{result['pricing_checked_at']}",
-                f"- 报价单检查状态：{result['pricing_check_status']}",
-                "- 关键输入确认前不输出正式推荐套餐、原活动价、9 折推荐价或 6 折最低价。",
+                f"- 报价单获取时间：{result['pricing_checked_at']}",
+                f"- 报价单获取状态：{result['pricing_check_status']}",
+                "- 关键输入确认前不输出正式推荐套餐、原活动价或 6/7/8/9 折报价。",
             ]
         )
         return "\n".join(lines)
@@ -1180,6 +1192,15 @@ def render_markdown(result: dict[str, Any]) -> str:
     discount_text = f"{result['final_discount']:.2f} 折" if result["final_discount"] is not None else "无法计算"
     discount_label = "当前报价相对调整后活动价折扣" if result["actual_quote"] is not None else "建议报价相对调整后活动价折扣"
     mode_label = "指定套餐模拟" if result["recommendation_mode"] == "user_specified" else "自动推荐"
+    discount_lines = []
+    if result["actual_quote"] is None:
+        discount_lines = [
+            "- **折扣报价：**",
+            f"  - 6 折：**{money(result['discount_prices']['6折'], currency)}**",
+            f"  - 7 折：**{money(result['discount_prices']['7折'], currency)}**",
+            f"  - 8 折：**{money(result['discount_prices']['8折'], currency)}**",
+            f"  - 9 折：**{money(result['discount_prices']['9折'], currency)}**",
+        ]
     lines = [
         "# 报价测算结果",
         "",
@@ -1189,13 +1210,12 @@ def render_markdown(result: dict[str, Any]) -> str:
         f"- **原活动价总价值：** {money(result['original_activity_total'], currency)}",
         f"- **减去项合计：** −{money(result['deduction_total'], currency)}",
         f"- **调整后活动价：** {money(result['adjusted_activity_total'], currency)}",
-        f"- **9 折推荐价：** {money(result['recommended_price_90'], currency)}",
-        f"- **6 折最低价：** {money(result['minimum_price_60'], currency)}",
         f"- **币种：** {result['currency']}",
         "",
         "## 需求识别",
         "",
     ]
+    lines[8:8] = discount_lines
     lines.extend(render_demand(result["demand_summary"]))
     lines.extend(["", "## 推荐说明", "", result["recommendation_reason"], "", "## 正负报价构成", ""])
 
@@ -1269,9 +1289,9 @@ def render_markdown(result: dict[str, Any]) -> str:
             f"- 口径：{result['pricing_source']['basis']}，币种 {result['currency']}",
             f"- 官方报价：{result['pricing_source']['url']}",
             f"- 价格版本/核验日期：{result['pricing_version']}",
-            f"- 本次报价单检查时间：{result['pricing_checked_at']}",
-            f"- 报价单检查状态：{result['pricing_check_status']}",
-            f"- 当前活动价有效期：截至 {result['pricing_source']['offer_valid_through']}，到期后需重新核验",
+            f"- 报价单获取时间：{result['pricing_checked_at']}",
+            f"- 报价单获取状态：{result['pricing_check_status']}",
+            f"- 当前活动价有效期：截至 {result['pricing_source']['offer_valid_through']}，到期或需更新时请重新运行初始化脚本",
             "- 内部规则：只有大媒体产生渠道加购费用；视频渠道不额外收费但需满足套餐容量。",
         ]
     )
@@ -1293,7 +1313,7 @@ def main() -> int:
     parser.add_argument("--format", choices=("json", "markdown"), default="json")
     parser.add_argument(
         "--pricing-check",
-        help="JSON produced by scripts/check_pricing.py; required for a formal quote",
+        help="Pricing snapshot JSON; defaults to references/pricing-check.json",
     )
     parser.add_argument(
         "--allow-unverified",
@@ -1303,15 +1323,20 @@ def main() -> int:
     args = parser.parse_args()
     try:
         request = load_request(args)
-        if args.pricing_check:
-            check = json.loads(Path(args.pricing_check).read_text(encoding="utf-8"))
-            if check.get("status") != "verified":
-                raise ValueError("live pricing check is not verified; update the pricing snapshot before quoting")
-            request["pricing_check"] = check
-        elif not args.allow_unverified:
-            raise ValueError(
-                "formal quotes require a live pricing check; run check_pricing.py --strict first and pass --pricing-check"
-            )
+        pricing_check_path = args.pricing_check or str(
+            Path(__file__).resolve().parent.parent / "references" / "pricing-check.json"
+        )
+        if pricing_check_path:
+            snapshot = Path(pricing_check_path)
+            if snapshot.exists():
+                check = json.loads(snapshot.read_text(encoding="utf-8"))
+                if check.get("status") != "verified" and not args.allow_unverified:
+                    raise ValueError("pricing snapshot is not verified; rerun scripts/initialize_pricing.py")
+                request["pricing_check"] = check
+            elif not args.allow_unverified:
+                raise ValueError(
+                    "pricing snapshot is missing; run scripts/initialize_pricing.py during Skill initialization"
+                )
         result = calculate(request)
     except (ValueError, TypeError, json.JSONDecodeError) as error:
         print(json.dumps({"error": str(error)}, ensure_ascii=False), file=sys.stderr)
